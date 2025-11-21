@@ -1,0 +1,172 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Anonymous Newspaper Feed — Demo</title>
+<style>
+  :root{ --bg:#faf9f6; --serif:"Times New Roman", Georgia, serif }
+  html,body{height:100%;margin:0;background:var(--bg);font-family:var(--serif);-webkit-font-smoothing:antialiased}
+  /* Each viewport "section" fills the screen */
+  .section{height:100vh;box-sizing:border-box;display:flex;align-items:stretch;justify-content:center;padding:28px 36px;}/* Newspaper container: uses CSS grid to fill the section exactly */ .page{width:100%;height:100%;display:grid;gap:18px;align-content:stretch;align-items:stretch}
+
+/* No borders, no cards — text and images sit directly on the page */ .item{display:flex;flex-direction:column;overflow:hidden;position:relative;} .item img{width:100%;height:55%;object-fit:cover;display:block} .text{padding:12px 6px 6px 6px;line-height:1.15;font-size:1.05rem;word-break:break-word;hyphens:auto}
+
+/* Floating animation using CSS variables for amplitude and duration */ @keyframes floatLR{0%{transform:translateX(var(--tx-start, -3px))}100%{transform:translateX(var(--tx-end,3px))}} .floating{animation-name:floatLR;animation-iteration-count:infinite;animation-direction:alternate;animation-timing-function:ease-in-out}
+
+/* Carousel row: horizontal scroll only for that strip */ .carousel-strip{display:flex;align-items:stretch;overflow-x:auto;overflow-y:hidden;padding-bottom:6px;scroll-snap-type:x mandatory} .carousel-strip .item{flex:0 0 calc(60vw);height:calc(80vh);margin-right:18px;scroll-snap-align:center}
+
+/* Typography — newspaper feel */ h1,h2,h3,h4{margin:0;padding:0} .headline{font-weight:700;font-size:1.45rem;letter-spacing:0.5px;margin-bottom:6px} .byline{font-size:0.72rem;margin-bottom:6px;color:rgba(0,0,0,0.6)}
+
+/* Responsive scaling for many columns */ @media (max-width:900px){ .text{font-size:0.98rem} } @media (max-width:600px){ .text{font-size:0.92rem} }
+
+/* Utility: visually separate sections by subtle background change (no borders) */ .scheme-0{background:linear-gradient(0deg,#fff,#f6f6f6)} .scheme-1{background:linear-gradient(0deg,#fffef2,#f8fbff)}
+
+/* Remove scrollbars in some browsers for cleaner look */ .carousel-strip::-webkit-scrollbar{height:8px} .carousel-strip::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.12);border-radius:4px}
+
+/* Make images and text align like newspaper columns — no box outlines */ .item img{border:0} .item .text p{margin:0} </style>
+
+</head>
+<body>
+<!-- Sections will be filled by JS. Each section fills the viewport and uses a random layout. -->
+<div id="root"></div><script>
+/* Demo generator for anonymous newspaper feed
+   - Produces ~100 posts across multiple fullscreen sections
+   - Each section chooses columns (1..4) and rows (1..5) randomly
+   - Cells = columns * rows; grid uses repeat to make each cell equal area so total fills viewport
+   - Some sections are horizontal carousels (user can swipe sideways)
+   - Items float slightly using CSS animation with per-item random amplitude and duration
+   - No borders: separation is whitespace only
+*/
+
+const TOTAL_POSTS = 100;
+const root = document.getElementById('root');
+
+// Small library of sample headlines / texts to mix
+const samples = [
+  'This is the text.', 'Someone posted this.', 'A new post.', "Someone's feelings...", 'Another post with an image and text.',
+  'What someone posted...', 'One more post.', 'A post with a text.', 'Thoughts on today.', 'Quiet morning.', 'I saw the sea today.',
+  'A short poem.', 'Woke up thinking.', 'I do not belong.', 'We must speak.', 'A letter to the world.', 'A tiny confession.'
+];
+
+// Color palette pairs (background, text) — two colors per section as requested
+const palettes = [
+  ['#ffffff','#000000'], ['#fffaf0','#0b0b0b'], ['#f9f9f9','#111111'], ['#fff8ee','#0a0a0a']
+];
+
+// Create an SVG placeholder image encoded as data URI with headline text
+function makeSVGDataURI(title, w=800, h=600, bg='#111', fg='#fff'){
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'><rect width='100%' height='100%' fill='${bg}'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='${encodeURIComponent("Times New Roman")}' font-size='36' fill='${fg}'>${escapeHtml(title)}</text></svg>`;
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') }
+
+// Generate a single post object
+function createPost(i){
+  const headline = samples[Math.floor(Math.random()*samples.length)];
+  const body = generateBody();
+  const svg = makeSVGDataURI('Img '+(i+1),800,600,randomGray(20,150), '#ffffff');
+  return {id:i,headline,body,svg};
+}
+function randomGray(min,max){
+  const v = Math.floor(min + Math.random()*(max-min));
+  return `rgb(${v},${v},${v})`;
+}
+function generateBody(){
+  const count = 6 + Math.floor(Math.random()*20);
+  let out = '';
+  for(let i=0;i<count;i++){ out += samples[Math.floor(Math.random()*samples.length)] + (i<count-1? ' ':''); }
+  return out;
+}
+
+// Create the posts
+const posts = Array.from({length:TOTAL_POSTS},(_,i)=>createPost(i));
+
+// Build sections to contain posts. We'll split posts into sections of variable sizes.
+let idx = 0; let sectionCount = 0;
+while(idx < posts.length){
+  // Randomly decide if this section is a carousel strip (20% chance)
+  const isCarousel = Math.random() < 0.18;
+  // Choose columns and rows according to rules: columns 1..4, rows 1..5
+  const columns = isCarousel ? 1 : (1 + Math.floor(Math.random()*4));
+  const rows = isCarousel ? 1 : (1 + Math.floor(Math.random()*4));
+  // For carousel, choose number of items between 4 and 8 to allow horizontal scroll
+  const itemsInSection = isCarousel ? Math.min(posts.length - idx, 6 + Math.floor(Math.random()*4)) : Math.min(posts.length - idx, columns*rows);
+
+  const sectionPosts = posts.slice(idx, idx + itemsInSection);
+  idx += itemsInSection;
+
+  const section = document.createElement('section');
+  section.className = 'section scheme-' + (sectionCount%2);
+  // pick palette
+  const pal = palettes[Math.floor(Math.random()*palettes.length)];
+  section.style.background = pal[0];
+  section.style.color = pal[1];
+
+  if(isCarousel){
+    const carousel = document.createElement('div');
+    carousel.className = 'page carousel-strip';
+    // Create items horizontally
+    section.appendChild(carousel);
+    sectionPosts.forEach((p,i)=>{
+      const it = createItemElement(p,/*useFullSize=*/true);
+      // random floating settings
+      applyFloating(it, i);
+      carousel.appendChild(it);
+    });
+  } else {
+    const page = document.createElement('div');
+    page.className = 'page';
+    // set grid columns and rows so cells are equal and fill the page
+    page.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+    page.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+    // fill with items; if posts fewer than cells, leave some empty but we try to match exactly
+    for(let i=0;i<columns*rows;i++){
+      const p = sectionPosts[i] || createPost(posts.length + i);
+      const it = createItemElement(p);
+      applyFloating(it, i);
+      page.appendChild(it);
+    }
+    section.appendChild(page);
+  }
+  root.appendChild(section);
+  sectionCount++;
+}
+
+// Create item element — image + headline + text
+function createItemElement(post, large=false){
+  const div = document.createElement('article');
+  div.className = 'item floating';
+
+  // random decide image top or text-only
+  const useImage = Math.random() > 0.18;
+  if(useImage){
+    const img = document.createElement('img'); img.src = post.svg; img.alt = post.headline; div.appendChild(img);
+  }
+  const txt = document.createElement('div'); txt.className = 'text';
+  const h = document.createElement('div'); h.className='headline'; h.textContent = post.headline;
+  const p = document.createElement('p'); p.textContent = post.body;
+  txt.appendChild(h); txt.appendChild(p);
+  div.appendChild(txt);
+  return div;
+}
+
+// Apply floating animation with per-item randomness — keeps items inside their own boxes
+function applyFloating(el, seed){
+  const dur = 6 + Math.random()*6; // 6s to 12s
+  const amp = 2 + Math.random()*8; // px left/right
+  const start = -amp; const end = amp;
+  el.style.setProperty('--tx-start', start + 'px');
+  el.style.setProperty('--tx-end', end + 'px');
+  el.style.animationDuration = (dur + Math.random()*4)+'s';
+  el.style.animationDelay = (Math.random()*-8)+'s';
+}
+
+// Accessibility & hint for testing
+const note = document.createElement('div');
+note.style.position='fixed';note.style.left='12px';note.style.bottom='12px';note.style.padding='10px 12px';note.style.background='rgba(255,255,255,0.85)';note.style.fontSize='13px';note.style.borderRadius='4px';note.style.boxShadow='0 2px 6px rgba(0,0,0,0.06)';note.style.fontFamily='sans-serif';note.textContent='Demo: scroll vertically for new random layouts. Some strips are horizontally scrollable.';
+document.body.appendChild(note);
+
+</script></body>
+</html>
