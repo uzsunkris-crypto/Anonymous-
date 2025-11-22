@@ -1,170 +1,424 @@
 <!doctype html>
-
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Anonymous Newspaper Feed — Demo (No Borders)</title>
-<style>
-  :root{ --bg:#ffffff; --serif:"Times New Roman", Georgia, serif }
-  html,body{height:100%;margin:0;background:var(--bg);font-family:var(--serif);-webkit-font-smoothing:antialiased;color:#000}/* Each section fills the viewport */ .section{height:100vh;box-sizing:border-box;display:flex;align-items:stretch;justify-content:center;padding:20px;}
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Anonymous</title>
+  <meta name="theme-color" content="#000000" id="meta-theme">
 
-/* Page uses CSS Grid to tile posts and always fill screen */ .page{width:100%;height:100%;display:grid;gap:10px;align-content:stretch;align-items:stretch}
+  <!--
+    Single-file Anonymous app (HTML + CSS + JS)
+    - Realtime Firestore + Storage (images)
+    - Random newspaper-like layouts
+    - Floating animations
+    - Auto dark / light mode (based on user preference)
+    - IMPORTANT: Replace firebaseConfig below only if you need to update values.
+  -->
 
-/* News item: NO borders, NO boxes. Images and text sit on the page with whitespace only. */ .item{display:flex;flex-direction:column;overflow:hidden;position:relative;background:transparent} .item img{width:100%;height:auto;object-fit:cover;display:block} .text{padding:10px 8px 6px 8px;line-height:1.18;font-size:1.05rem;word-break:break-word;hyphens:auto}
+  <style>
+    /* ---------- Theme & base ---------- */
+    :root{
+      --bg-dark: #050507;
+      --panel-dark: #0b0b0d;
+      --muted-dark: #95a1a6;
+      --accent-cyan: #00d0ff;
+      --accent-gold: #e0b84b;
+      --text-light: #e7f2f6;
+      --paper-white: #faf8f5;
 
-/* Headlines like newspapers */ .headline{font-weight:700;font-size:1.35rem;line-height:1.05;margin-bottom:6px;} .body{font-size:0.95rem;color:#000}
+      --bg-light: #fffefc;
+      --panel-light: #ffffff;
+      --muted-light: #5a6063;
+      --text-dark: #0b0b0b;
+      --gap: 12px;
+      --max-width: 1200px;
+      --serif: "Times New Roman", Georgia, serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    html,body{height:100%;margin:0;font-family:var(--serif);-webkit-font-smoothing:antialiased}
+    body{background:var(--bg-dark);color:var(--text-light);transition:background .28s,color .28s}
 
-/* Floating animation (gentle horizontal drift) */ @keyframes floatLR{0%{transform:translateX(var(--tx-start,-4px))}100%{transform:translateX(var(--tx-end,4px))}} .floating{animation-name:floatLR;animation-iteration-count:infinite;animation-direction:alternate;animation-timing-function:linear}
+    /* Light theme toggled by JS */
+    body.light{background:var(--bg-light);color:var(--text-dark)}
+    body.light .muted{color:var(--muted-light)}
+    body.light .composer, body.light .item, body.light .mood{background:linear-gradient(180deg, rgba(0,0,0,0.02), transparent)}
 
-/* Carousel strip: horizontal scroll for that strip only */ .carousel-strip{display:flex;align-items:stretch;overflow-x:auto;overflow-y:hidden;padding-bottom:6px;scroll-snap-type:x mandatory} .carousel-strip .item{flex:0 0 calc(60vw);height:calc(80vh);margin-right:18px;scroll-snap-align:center}
+    .visually-hidden{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
 
-/* Make sure there's no outline/box-shadow/border anywhere */ *{box-sizing:border-box} img,div,article,section{outline:0;border:0}
+    /* header */
+    header{
+      position:fixed;left:0;right:0;top:0;height:64px;display:flex;align-items:center;gap:14px;padding:10px 18px;
+      z-index:120;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-bottom:1px solid rgba(255,255,255,0.02);
+    }
+    .brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:inherit}
+    .logo{width:44px;height:44px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,#060607,#111)}
+    .brand h1{margin:0;font-size:16px;letter-spacing:0.6px}
+    .header-right{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--muted-dark)}
 
-/* Responsive text scaling */ @media (max-width:1000px){ .headline{font-size:1.15rem} .text{font-size:0.98rem} } @media (max-width:600px){ .headline{font-size:1.05rem} .text{font-size:0.92rem} }
+    /* container */
+    main{padding:86px 18px 120px;max-width:var(--max-width);margin:0 auto}
+    .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:12px}
 
-/* Hide scrollbar in Firefox/Edge lightly but keep usability */ .carousel-strip::-webkit-scrollbar{height:8px} .carousel-strip::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.12);border-radius:4px}
+    .muted{color:var(--muted-dark);font-size:13px}
 
-/* Accessibility helper - small overlay note */ .note{position:fixed;left:12px;bottom:12px;padding:8px 10px;background:rgba(255,255,255,0.9);font-family:Arial,Helvetica,sans-serif;font-size:12px;border-radius:4px}
+    /* composer */
+    .composer{
+      padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);
+      background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.00));
+      box-shadow: 0 10px 32px rgba(0,0,0,0.55);transition:transform .12s;
+    }
+    .composer:focus-within{transform:translateY(-3px)}
+    textarea{
+      width:100%;min-height:100px;padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.03);
+      background:transparent;color:inherit;font-family:var(--serif);font-size:15px;resize:vertical;outline:none;
+    }
+    .composer .row{display:flex;gap:8px;align-items:center;margin-top:10px}
+    .uinput{padding:8px;border-radius:8px;border:1px dashed rgba(255,255,255,0.03);background:transparent;color:var(--muted-dark)}
+    .btn{
+      padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--panel-dark),rgba(255,255,255,0.02));
+      color:inherit;font-weight:700;cursor:pointer;
+    }
+    .btn.primary{background:linear-gradient(90deg,var(--accent-cyan),var(--accent-gold));color:#020202}
 
-</style>
+    /* preview */
+    .preview{margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+    /* feed / page grid */
+    .section{padding:18px 0;min-height:60vh}
+    .page{display:grid;gap:var(--gap);align-items:stretch;grid-auto-rows:220px}
+    @media (min-width:1400px){ .page{grid-template-columns:repeat(4,1fr)} }
+    @media (min-width:1000px) and (max-width:1399px){ .page{grid-template-columns:repeat(3,1fr)} }
+    @media (min-width:720px) and (max-width:999px){ .page{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width:719px){ .page{grid-template-columns:repeat(1,1fr);grid-auto-rows:auto} }
+
+    .item{
+      display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;padding:0;border-radius:4px;
+      transition: transform .28s cubic-bezier(.2,.9,.3,1), box-shadow .28s; background:transparent;
+      min-height:120px;
+    }
+    .item:hover{transform:translateY(-6px)}
+    .item img{width:100%;height:60%;object-fit:cover;display:block}
+    .text{padding:12px 14px 16px 14px}
+    .headline{font-weight:700;font-size:1.05rem;margin-bottom:8px}
+    .body{font-size:0.94rem;color:inherit;opacity:0.95;line-height:1.35}
+
+    /* floating animation */
+    @keyframes floatLR{
+      0%{transform:translateX(var(--tx-start, -2px))}
+      100%{transform:translateX(var(--tx-end, 2px))}
+    }
+    .floating{animation-name:floatLR;animation-iteration-count:infinite;animation-direction:alternate;animation-timing-function:linear}
+
+    /* fab / quick actions */
+    .fab{position:fixed;right:18px;bottom:18px;z-index:140;display:flex;flex-direction:column;gap:10px}
+    .fab .main{width:60px;height:60px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-gold));color:#020202;font-weight:900;cursor:pointer}
+    .fab .mini{width:44px;height:44px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,0.03);cursor:pointer;color:var(--muted-dark)}
+
+    /* mood panel */
+    .mood{position:fixed;right:18px;top:86px;width:220px;padding:10px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);font-family:var(--mono);font-size:13px;color:var(--muted-dark);z-index:120;border:1px solid rgba(255,255,255,0.02)}
+    .mood h3{margin:0 0 8px 0;color:inherit;font-size:13px}
+    .mood .bar{height:8px;border-radius:6px;background:rgba(255,255,255,0.03);overflow:hidden;margin-top:8px}
+    .mood .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--accent-cyan),var(--accent-gold));}
+
+    .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;padding:10px 14px;background:#000;border-radius:8px;color:#fff;z-index:200;opacity:0;transition:opacity .22s, transform .22s}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+
+    footer{padding:18px 0;text-align:center;color:var(--muted-dark);font-family:var(--mono);font-size:13px;margin-top:18px}
+  </style>
 </head>
 <body>
-<div id="root"></div>
-<div class="note">Demo: scroll vertically for new layouts. Some strips are horizontally scrollable. No borders — pure newspaper blocks.</div><script>
-// Demo generator: produces 100+ posts and lays them into fullscreen sections.
-// Key rules implemented:
-// - Columns: 1..4
-// - Rows: 1..5
-// - Sections fill viewport completely using grid cells
-// - Carousel sections (horizontal scroll) exist; vertical scroll loads new layouts
-// - Floating: gentle left-right motion within each item but never leaves its cell
-// - No borders or boxes — separation via whitespace only
+  <header>
+    <a class="brand" href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="6" width="52" height="52" rx="10" fill="#060607"/><path d="M20 44c0-8 12-12 12-20s12 4 12 12" stroke="#00d0ff" stroke-width="2" stroke-linecap="round"/><circle cx="32" cy="44" r="6" fill="#e0b84b"/></svg>
+      </div>
+      <h1>Anonymous</h1>
+    </a>
+    <div class="header-right muted">No accounts • No tracking • Speak freely</div>
+  </header>
 
-const TOTAL_POSTS = 120; // generate a bit more than 100 to ensure full sections
-const posts = [];
-const root = document.getElementById('root');
+  <main>
+    <div class="toolbar">
+      <div class="muted">Post text, image, or both — remain anonymous.</div>
+      <div style="flex:1"></div>
+      <button id="shuffleBtn" class="btn">Shuffle</button>
+      <button id="refreshFeed" class="btn">Refresh</button>
+      <button id="themeToggle" class="btn">Theme</button>
+    </div>
 
-// small corpus for headlines/body
-const snippets = [
-  'This is the text.', 'Someone posted this.', 'A new post.', "Someone's feelings...",
-  'Another post with an image and text.', 'What someone posted...', 'One more post.', 'A post with a text.',
-  'Thoughts on today.', 'Quiet morning.', 'Woke up thinking.', 'A short poem.', 'A tiny confession.', 'A small rant.'
-];
+    <section class="composer" aria-label="Create post">
+      <textarea id="postText" placeholder="Type how you feel about the world..." maxlength="3000"></textarea>
+      <div class="row">
+        <input type="file" id="imageInput" accept="image/*" class="uinput" aria-label="Image upload">
+        <button id="submitPost" class="btn primary">Post anonymously</button>
+        <div style="flex:1"></div>
+        <div class="muted" style="font-size:13px">Images ≤ 5MB. Please follow laws. Rate limit enforced.</div>
+      </div>
+      <div class="preview" id="preview" aria-hidden="true"></div>
+    </section>
 
-function randInt(min,max){ return Math.floor(min + Math.random()*(max-min+1)); }
-function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+    <section class="section">
+      <div id="feed" class="page" role="list" aria-live="polite"></div>
+    </section>
 
-// Create simple SVG placeholder images so page is self-contained
-function makeSVG(title,w=1200,h=800,gray=200){
-  const bg = `rgb(${gray},${gray},${gray})`;
-  const fg = '#ffffff';
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='${w}' height='${h}'><rect width='100%' height='100%' fill='${bg}'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' font-family='Times New Roman, Georgia, serif' font-size='48' fill='${fg}'>${escapeHtml(title)}</text></svg>`;
-  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
-}
-function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+    <footer>© Anonymous</footer>
+  </main>
 
-// generate posts
-for(let i=0;i<TOTAL_POSTS;i++){
-  const headline = pick(snippets);
-  const paragraph = Array.from({length: randInt(6,18)}).map(()=>pick(snippets)).join(' ');
-  const gray = randInt(40,200);
-  const img = makeSVG('Img '+(i+1),1200,800,gray);
-  posts.push({id:i,headline,paragraph,img});
-}
+  <div class="fab" role="toolbar" aria-label="Actions">
+    <div class="mini" id="shuffleMini" title="Shuffle layout">⇄</div>
+    <div class="main" id="openComposer" title="Create">✚</div>
+  </div>
 
-// Build fullscreen sections until we consume posts
-let pointer = 0;
-let sectionIndex = 0;
-while(pointer < posts.length){
-  const section = document.createElement('section');
-  section.className = 'section';
-  // strict black on white newspaper style
-  section.style.background = '#ffffff';
-  section.style.color = '#000000';
+  <div class="mood" id="moodPanel" aria-hidden="true">
+    <h3>World Mood</h3>
+    <div id="moodSummary" class="muted">Analyzing…</div>
+    <div class="bar" aria-hidden="true"><i id="moodBar" style="width:10%"></i></div>
+  </div>
 
-  // 20% chance this is a carousel strip
-  const isCarousel = Math.random() < 0.2;
-  if(isCarousel){
-    // Carousel: horizontal row that the user can swipe; choose number of visible items 3..6
-    const carousel = document.createElement('div');
-    carousel.className = 'page carousel-strip';
-    const count = Math.min(posts.length - pointer, randInt(4,8));
-    for(let i=0;i<count;i++){
-      const p = posts[pointer++];
-      const el = createItem(p,true);
-      applyFloating(el);
-      carousel.appendChild(el);
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- Firebase: modular CDN — uses your config -->
+  <script type="module">
+    // --------------- Replace config only if you need to ----------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyDcO-wf5h960vscEyMlz_QQaXSRP0CzzLk",
+      authDomain: "anonymous-e06c8.firebaseapp.com",
+      projectId: "anonymous-e06c8",
+      storageBucket: "anonymous-e06c8.firebasestorage.app",
+      messagingSenderId: "309422384352",
+      appId: "1:309422384352:web:ea17f8a5edc42e03bf9c85",
+      measurementId: "G-0BCHGR1Q07"
+    };
+    // -----------------------------------------------------------------
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
+    import {
+      getFirestore, collection, addDoc, serverTimestamp,
+      query, orderBy, onSnapshot, limit
+    } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+    import {
+      getStorage, ref, uploadBytesResumable, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js";
+
+    // initialize firebase
+    const app = initializeApp(firebaseConfig);
+    try { getAnalytics(app); } catch(e){ /* analytics may fail on local */ }
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    /* ---------- App logic ---------- */
+    const feedEl = document.getElementById('feed');
+    const postText = document.getElementById('postText');
+    const imageInput = document.getElementById('imageInput');
+    const submitPost = document.getElementById('submitPost');
+    const preview = document.getElementById('preview');
+    const toast = document.getElementById('toast');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const refreshBtn = document.getElementById('refreshFeed');
+    const shuffleMini = document.getElementById('shuffleMini');
+    const openComposer = document.getElementById('openComposer');
+    const themeToggle = document.getElementById('themeToggle');
+    const moodSummary = document.getElementById('moodSummary');
+    const moodBar = document.getElementById('moodBar');
+
+    // basic device detection for optional banners (not shown by default)
+    const isAndroid = /android/i.test(navigator.userAgent);
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    // preview image locally
+    imageInput.addEventListener('change', () => {
+      preview.innerHTML = '';
+      const f = imageInput.files[0];
+      if(!f) return;
+      if(f.size > 5*1024*1024){ alert('Image too large (max 5MB)'); imageInput.value=''; return; }
+      const img = document.createElement('img'); img.style.maxWidth='220px'; img.style.maxHeight='160px'; img.src = URL.createObjectURL(f);
+      preview.appendChild(img);
+    });
+
+    // rate limiting per-device (one post per 20 seconds)
+    const POST_INTERVAL_MS = 20*1000;
+    function canPost(){
+      const last = Number(localStorage.getItem('anon_last_post')||0);
+      return Date.now() - last > POST_INTERVAL_MS;
     }
-    section.appendChild(carousel);
-  } else {
-    // Grid layout: columns 1..4, rows 1..5, but ensure cells=columns*rows <= remaining posts by limiting
-    let columns = randInt(1,4);
-    let rows = randInt(1,5);
-    // Adjust so we don't create a section larger than remaining posts unless we're near the end
-    const remaining = posts.length - pointer;
-    if(columns * rows > remaining && remaining >= 1){
-      // try to find a pair that fits remaining (but still within min/max)
-      let found = false;
-      for(let c=4;c>=1 && !found;c--){
-        for(let r=5;r>=1 && !found;r--){
-          if(c*r <= remaining && c>=1 && c<=4 && r>=1 && r<=5){ columns=c; rows=r; found=true; }
+
+    // uploading image and creating post
+    submitPost.addEventListener('click', async () => {
+      if(!canPost()){ showToast('Please wait a moment before posting again'); return; }
+      const text = postText.value.trim();
+      const file = imageInput.files[0] || null;
+      if(!text && !file){ showToast('Enter text, select an image, or both'); return; }
+
+      submitPost.disabled = true; submitPost.textContent = 'Posting...';
+      try{
+        let imageUrl = null;
+        if(file){
+          // create a storage ref
+          const ext = (file.name.split('.').pop() || 'jpg').replace(/[^\w]/g,'').slice(0,6);
+          const path = `images/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+          const storageRef = ref(storage, path);
+          // upload
+          const uploadTask = uploadBytesResumable(storageRef, file);
+          // Wait for complete
+          await new Promise((resolve, reject) => {
+            uploadTask.on('state_changed', null, reject, async () => {
+              imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+              resolve();
+            });
+          });
         }
+
+        // save to firestore
+        const docRef = await addDoc(collection(db, 'posts'), {
+          text: text || '',
+          image: imageUrl || null,
+          createdAt: serverTimestamp()
+        });
+
+        localStorage.setItem('anon_last_post', Date.now());
+        postText.value = ''; imageInput.value = ''; preview.innerHTML = '';
+        showToast('Posted anonymously');
+      } catch(err){
+        console.error(err); showToast('Post failed: '+(err.message||err));
       }
-      if(!found){ // if none found, cap cells to remaining by increasing rows/columns to 1xremaining up to 4x5
-        // We'll set rows = Math.min(5, remaining); columns = Math.ceil(remaining / rows)
-        rows = Math.min(5, remaining);
-        columns = Math.min(4, Math.ceil(remaining / rows));
+      submitPost.disabled = false; submitPost.textContent = 'Post anonymously';
+    });
+
+    // Realtime feed listener — latest 80 posts by time desc
+    function startRealtimeFeed(){
+      const q = query(collection(db, 'posts'), orderBy('createdAt','desc'), limit(80));
+      onSnapshot(q, (snapshot) => {
+        const docs = [];
+        snapshot.forEach(doc => { docs.push({ id: doc.id, ...doc.data() }); });
+        renderFeed(docs);
+      }, (err) => {
+        console.warn('Feed listener error', err);
+        showToast('Realtime feed unavailable');
+      });
+    }
+
+    // Render posts in grid — randomize sizes/row spans for newspaper look
+    function renderFeed(posts){
+      feedEl.innerHTML = '';
+      // Build simple word tally for mood
+      const words = {};
+      posts.forEach((p, i) => {
+        // create item
+        const art = document.createElement('article');
+        art.className = 'item floating';
+        // occasionally span rows/columns for variety
+        if(Math.random() < 0.06) art.style.gridRow = 'span 2';
+        if(Math.random() < 0.04) art.style.gridColumn = 'span 2';
+
+        if(p.image){
+          const img = document.createElement('img'); img.src = p.image; img.alt = p.text || 'Anonymous image'; art.appendChild(img);
+        }
+        const textWrap = document.createElement('div'); textWrap.className = 'text';
+        const h = document.createElement('div'); h.className = 'headline';
+        const bodyText = p.text || '';
+        h.textContent = bodyText.length>120 ? bodyText.slice(0,118)+'…' : bodyText;
+        const b = document.createElement('div'); b.className = 'body'; b.textContent = bodyText;
+        textWrap.appendChild(h); textWrap.appendChild(b); art.appendChild(textWrap);
+
+        // floating amplitude subtle
+        const amp = (1 + Math.min(6, (bodyText||'').length/40)).toFixed(2);
+        art.style.setProperty('--tx-start', `-${amp}px`); art.style.setProperty('--tx-end', `${amp}px`);
+        art.style.animationDuration = (6 + Math.random()*6) + 's';
+        art.style.animationDelay = (-Math.random()*6) + 's';
+
+        feedEl.appendChild(art);
+
+        // gather words (top words for mood)
+        (bodyText.split(/\s+/).slice(0,40)).forEach(w => {
+          const k = w.replace(/[^\w]/g,'').toLowerCase();
+          if(k.length>3) words[k] = (words[k]||0)+1;
+        });
+      });
+
+      updateMood(words);
+    }
+
+    // Mood: simple word-frequency -> simple score and bar
+    function updateMood(words){
+      const entries = Object.entries(words).sort((a,b)=>b[1]-a[1]).slice(0,6);
+      if(entries.length){
+        moodSummary.textContent = 'Top: ' + entries.map(e=>e[0]).join(', ');
+        let score = 50;
+        const positive = ['love','hope','peace','good','calm','joy','safe'];
+        const negative = ['fire','war','hate','angry','die','death','sick','lost','pain','hurt'];
+        entries.forEach(([w,c])=>{
+          if(positive.includes(w)) score += c*6;
+          if(negative.includes(w)) score -= c*6;
+        });
+        score = Math.max(6, Math.min(95, score));
+        moodBar.style.width = score + '%';
+      } else {
+        moodSummary.textContent = 'No posts yet';
+        moodBar.style.width = '6%';
       }
     }
 
-    const page = document.createElement('div');
-    page.className = 'page';
-    page.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
-    page.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-
-    const cells = columns * rows;
-    for(let i=0;i<cells;i++){
-      // ensure we always place an item; if posts run out, generate a small filler from existing snippets
-      const p = (pointer < posts.length) ? posts[pointer++] : {id:'f'+i, headline:pick(snippets), paragraph:pick(snippets), img:makeSVG('Filler',800,600,randInt(80,200))};
-      const el = createItem(p,false);
-      applyFloating(el);
-      page.appendChild(el);
+    // Small helpers
+    function showToast(msg, ms=2200){
+      toast.textContent = msg; toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'), ms);
     }
-    section.appendChild(page);
-  }
 
-  root.appendChild(section);
-  sectionIndex++;
-}
+    // Shuffle layout (pick random columns 1..4 but respect screen width)
+    function shuffleLayout(){
+      const w = window.innerWidth;
+      let comfortable = [1];
+      if(w > 1400) comfortable = [2,3,4];
+      else if(w > 1000) comfortable = [2,3];
+      else if(w > 720) comfortable = [1,2];
+      else comfortable = [1];
+      const cols = comfortable[Math.floor(Math.random()*comfortable.length)];
+      document.querySelector('.page').style.gridTemplateColumns = `repeat(${cols},1fr)`;
+      showToast('Layout shuffled');
+    }
 
-// Create an item element — image optional
-function createItem(post, large){
-  const art = document.createElement('article');
-  art.className = 'item floating';
+    // Refresh feed manually (rebuild layout by refetching current docs once)
+    async function refreshFeedOnce(){
+      try {
+        // simple fetch latest documents once (not realtime)
+        const snapshot = await (await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js")).getDocs(
+          (await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js")).query(
+            (await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js")).collection(db,'posts'),
+            (await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js")).orderBy('createdAt','desc'),
+            (await import("https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js")).limit(80)
+          )
+        );
+        const docs = []; snapshot.forEach(d=>docs.push({id:d.id,...d.data()}));
+        renderFeed(docs);
+      } catch(err){ console.warn('refresh failed', err); showToast('Refresh failed'); }
+    }
 
-  // Randomly decide whether this post is text-only or image+text (roughly 20% text-only)
-  const textOnly = Math.random() < 0.18;
-  if(!textOnly){
-    const img = document.createElement('img'); img.src = post.img; img.alt = post.headline; art.appendChild(img);
-  }
-  const cont = document.createElement('div'); cont.className = 'text';
-  const h = document.createElement('div'); h.className = 'headline'; h.textContent = post.headline;
-  const p = document.createElement('div'); p.className = 'body'; p.textContent = post.paragraph;
-  cont.appendChild(h); cont.appendChild(p);
-  art.appendChild(cont);
-  return art;
-}
+    // theme toggle: auto-detect then allow toggle
+    (function initTheme(){
+      const prefers = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+      if(prefers) document.body.classList.add('light'), document.getElementById('meta-theme').setAttribute('content','#fff');
+      else document.body.classList.remove('light'), document.getElementById('meta-theme').setAttribute('content','#000');
+      themeToggle.addEventListener('click', ()=>{
+        document.body.classList.toggle('light');
+        const isLight = document.body.classList.contains('light');
+        document.getElementById('meta-theme').setAttribute('content', isLight ? '#fff' : '#000');
+        showToast(isLight ? 'Light theme' : 'Dark theme');
+      });
+    })();
 
-// Apply floating effect ensuring motion remains within cell by using small amplitude
-function applyFloating(el){
-  const duration = (6 + Math.random()*8).toFixed(2) + 's';
-  const amp = (1 + Math.random()*6).toFixed(2); // px
-  el.style.setProperty('--tx-start', `-${amp}px`);
-  el.style.setProperty('--tx-end', `${amp}px`);
-  el.style.animationDuration = duration;
-  el.style.animationDelay = (-Math.random()*8)+'s';
-}
+    // wire UI
+    shuffleBtn.addEventListener('click', shuffleLayout);
+    shuffleMini.addEventListener('click', shuffleLayout);
+    openComposer.addEventListener('click', ()=>{ document.getElementById('postText').scrollIntoView({behavior:'smooth', block:'center'}); document.getElementById('postText').focus(); });
+    refreshBtn.addEventListener('click', refreshFeedOnce);
 
-</script></body>
-</html>
+    // start realtime
+    try { startRealtimeFeed(); } catch(e){ console.warn('realtime start failed', e); showToast('Realtime unavailable'); }
+
+    // initial layout shuffle
+    shuffleLayout();
+
+    // accessibility: keyboard submit with Ctrl+Enter
+    postText.addEventListener('keydown', (ev) => { if(ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)){ 
