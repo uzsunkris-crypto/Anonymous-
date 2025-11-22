@@ -1,133 +1,337 @@
-<!DOCTYPE html><html lang="en">
+<!doctype html>
+<html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Anonymous</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Anonymous — Newspaper Feed</title>
+<meta name="theme-color" content="#0b0b0b" id="meta-theme">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, sans-serif; }
-  body { background: #0f0f0f; color: #fff; padding: 15px; }.container { max-width: 700px; margin: auto; display: flex; flex-direction: column; gap: 20px; }
+  /* ---------- Base / Paper Texture ---------- */
+  :root{
+    --bg-dark:#070707; --panel:rgba(255,255,255,0.02); --muted:#98a2a6;
+    --accent-cyan:#00d0ff; --accent-gold:#e0b84b;
+    --text-light:#eaf6fb; --text-dark:#0b0b0b;
+    --maxw:1200px; --gap:12px; --serif:"Georgia", "Times New Roman", serif; --mono:ui-monospace,monospace;
+  }
+  html,body{height:100%;margin:0;font-family:var(--serif);-webkit-font-smoothing:antialiased;background:var(--bg-dark);color:var(--text-light);}
+  /* subtle old paper texture (data URL small PNG gradient) */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      radial-gradient(1200px 800px at 10% 20%, rgba(224,184,75,0.02), transparent 6%),
+      radial-gradient(900px 600px at 90% 80%, rgba(0,208,255,0.01), transparent 5%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.008) 0 1px, transparent 1px 6px),
+      linear-gradient(180deg, rgba(255,250,240,0.02), rgba(0,0,0,0.02));
+    mix-blend-mode: overlay; opacity:0.95;
+  }
 
-header { text-align: center; } header h1 { font-size: 30px; margin-bottom: 5px; } header p { font-size: 14px; opacity: 0.7; }
+  /* ---------- Header ---------- */
+  header{position:sticky;top:0;z-index:40;padding:18px 14px;background:linear-gradient(180deg, rgba(0,0,0,0.3), rgba(0,0,0,0.12));backdrop-filter: blur(4px);}
+  .brand{max-width:var(--maxw);margin:0 auto;display:flex;align-items:center;gap:14px}
+  .logo{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#060607,#111);display:grid;place-items:center}
+  .brand h1{margin:0;font-size:20px;letter-spacing:1px;font-weight:700}
+  .brand small{color:var(--muted);margin-left:6px;font-family:var(--mono);font-size:12px}
 
-.action-buttons { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; } .action-buttons button { flex: 1; min-width: 140px; padding: 10px; border: none; border-radius: 10px; font-size: 16px; background: #1f1f1f; color: #fff; }
+  /* container */
+  main{max-width:var(--maxw);margin:18px auto;padding:0 14px;position:relative;z-index:1}
 
-textarea { width: 100%; min-height: 150px; padding: 12px; border-radius: 10px; border: 1px solid #333; background: #111; color: #fff; font-size: 16px; }
+  /* toolbar */
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .muted{color:var(--muted);font-size:13px}
 
-.file-input { margin-top: 5px; }
+  .btn{padding:8px 12px;border-radius:10px;border:0;background:linear-gradient(90deg,rgba(255,255,255,0.02),rgba(255,255,255,0.01));color:inherit;cursor:pointer;font-weight:700}
+  .btn.primary{background:linear-gradient(90deg,var(--accent-cyan),var(--accent-gold));color:#020202}
 
-.post-btn { width: 100%; padding: 15px; background: #00c6ff; color: #000; font-weight: bold; border-radius: 10px; border: none; font-size: 18px; }
+  /* ---------- News grid (newspaper-like) ---------- */
+  .page{display:grid;gap:var(--gap);grid-auto-rows:220px}
+  @media (min-width:1400px){ .page{grid-template-columns:repeat(4,1fr)} }
+  @media (min-width:1000px) and (max-width:1399px){ .page{grid-template-columns:repeat(3,1fr)} }
+  @media (min-width:720px) and (max-width:999px){ .page{grid-template-columns:repeat(2,1fr)} }
+  @media (max-width:719px){ .page{grid-template-columns:repeat(1,1fr);grid-auto-rows:auto} }
 
-.world-mood-box { background: #1a1a1a; padding: 15px; border-radius: 12px; width: 100%; text-align: center; } .mood-bar { height: 10px; width: 100%; background: #333; border-radius: 6px; overflow: hidden; margin-top: 8px; } .mood-fill { height: 100%; width: 40%; background: #00c6ff; transition: 0.3s; }
+  .item{
+    display:flex;flex-direction:column;overflow:hidden;padding:0;border-radius:6px;background:transparent;transition:transform .28s,box-shadow .28s;
+    min-height:120px;
+  }
+  .item:hover{transform:translateY(-6px);box-shadow:0 20px 50px rgba(0,0,0,0.6)}
+  .item img{width:100%;height:60%;object-fit:cover;display:block}
+  .text{padding:12px 14px 16px 14px}
+  .headline{font-weight:700;font-size:1.05rem;margin-bottom:8px}
+  .body{font-size:0.95rem;line-height:1.35;color:inherit;opacity:0.95}
 
-.posts { display: flex; flex-direction: column; gap: 20px; }
+  /* floating animation */
+  @keyframes floatLR{0%{transform:translateX(var(--tx-start,-3px))}100%{transform:translateX(var(--tx-end,3px))}}
+  .floating{animation-name:floatLR;animation-iteration-count:infinite;animation-direction:alternate;animation-timing-function:linear}
 
-.post { background: #161616; padding: 15px; border-radius: 12px; } .post img { width: 100%; border-radius: 10px; margin-top: 10px; }
+  /* occasional bigger tiles */
+  .span2col{grid-column:span 2}
+  .span2row{grid-row:span 2}
 
-@media (max-width: 480px) { header h1 { font-size: 25px; } .action-buttons { flex-direction: column; } .action-buttons button { width: 100%; } } </style>
+  /* composer (bottom bubble) */
+  .composer {
+    position:fixed;left:12px;right:12px;bottom:12px;padding:12px;border-radius:14px;background:linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.55));backdrop-filter: blur(6px);z-index:80;
+    display:flex;gap:8px;align-items:flex-end;box-shadow:0 12px 30px rgba(0,0,0,0.6)
+  }
+  .composer .left{flex:1;display:flex;flex-direction:column;gap:8px}
+  .composer textarea{width:100%;min-height:56px;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03);background:transparent;color:inherit;resize:vertical}
+  .composer input[type=file]{color:var(--muted);font-size:13px}
+  .composer .postwrap{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+  .postBtn{padding:10px 14px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent-cyan),var(--accent-gold));color:#020202;font-weight:800;cursor:pointer}
 
-</head><body>
-  <div class="container">
-    <header>
-      <h1>Anonymous</h1>
-      <p>No accounts • No tracking • Express freely</p>
-    </header><div class="world-mood-box">
-  <h3>World Mood</h3>
-  <div class="mood-bar"><div class="mood-fill" id="moodFill"></div></div>
+  /* loading spinner */
+  .spinner{width:42px;height:42px;border-radius:50%;border:4px solid rgba(255,255,255,0.08);border-top-color:var(--accent-cyan);animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* toast */
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;padding:10px 14px;background:#000;border-radius:8px;color:#fff;z-index:200;opacity:0;transition:opacity .2s,transform .2s}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px)}
+
+  /* paper texture when in light mode: subtle */
+  body.light::before{opacity:0.6;filter:grayscale(.2) contrast(.95)}
+  body.light{background:#fbf8f2;color:var(--text-dark)}
+  body.light .item{background:transparent}
+  body.light .composer{background:rgba(255,255,255,0.9);box-shadow:0 8px 30px rgba(0,0,0,0.06)}
+  /* accessibility */
+  .visually-hidden{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo" aria-hidden="true"><svg viewBox="0 0 64 64" width="28" height="28" xmlns="http://www.w3.org/2000/svg"><rect x="6" y="6" width="52" height="52" rx="10" fill="#060607"/><path d="M20 44c0-8 12-12 12-20s12 4 12 12" stroke="#00d0ff" stroke-width="2"/><circle cx="32" cy="44" r="6" fill="#e0b84b"/></svg></div>
+    <h1>Anonymous</h1><small class="muted">No accounts • No tracking</small>
+  </div>
+</header>
+
+<main>
+  <div class="toolbar" style="margin-bottom:8px;align-items:center">
+    <div class="muted">Scroll for new layouts • Posts update in realtime</div>
+    <div style="flex:1"></div>
+    <button id="shuffleBtn" class="btn">Shuffle</button>
+    <button id="refreshBtn" class="btn">Refresh</button>
+    <button id="themeBtn" class="btn">Theme</button>
+  </div>
+
+  <section class="page" id="feed" aria-live="polite"></section>
+
+  <!-- loader at bottom for infinite scroll -->
+  <div id="loaderBottom" style="max-width:var(--maxw);margin:18px auto;text-align:center;display:none"><div class="spinner"></div></div>
+
+</main>
+
+<!-- composer: bottom bubble -->
+<div class="composer" role="form" aria-label="Post anonymously">
+  <div class="left">
+    <textarea id="postText" placeholder="Type anonymously... (text or image)"></textarea>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="fileInput" type="file" accept="image/*" aria-label="Choose image">
+      <div id="uploadProgress" style="width:120px;height:8px;background:rgba(255,255,255,0.04);border-radius:6px;overflow:hidden;display:none"><div id="uploadFill" style="height:100%;width:0;background:linear-gradient(90deg,var(--accent-cyan),var(--accent-gold));"></div></div>
+    </div>
+  </div>
+  <div class="postwrap">
+    <div id="spinnerSmall" style="display:none" aria-hidden="true"><div class="spinner"></div></div>
+    <button id="postBtn" class="postBtn">Post</button>
+  </div>
 </div>
 
-<div class="action-buttons">
-  <button onclick="shuffleMood()">Shuffle</button>
-  <button onclick="refreshPosts()">Refresh</button>
-  <button onclick="toggleTheme()">Theme</button>
-</div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<textarea id="textInput" placeholder="Type how you feel about the world..."></textarea>
+<!-- Firebase modular CDN -->
+<script type="module">
+/* ==================== CONFIG - keep your firebase config here ==================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyDcO-wf5h960vscEyMlz_QQaXSRP0CzzLk",
+  authDomain: "anonymous-e06c8.firebaseapp.com",
+  projectId: "anonymous-e06c8",
+  storageBucket: "anonymous-e06c8.firebasestorage.app",
+  messagingSenderId: "309422384352",
+  appId: "1:309422384352:web:ea17f8a5edc42e03bf9c85",
+  measurementId: "G-0BCHGR1Q07"
+};
+/* ================================================================================ */
 
-<input class="file-input" type="file" id="imageInput" accept="image/*" />
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+import { getFirestore, collection, addDoc, query, orderBy, limit, onSnapshot, getDocs, startAfter } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js";
 
-<button class="post-btn" onclick="postAnonymous()">Post anonymously</button>
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
-<div class="posts" id="postsContainer"></div>
+/* ---------- UI elements ---------- */
+const feedEl = document.getElementById('feed');
+const postText = document.getElementById('postText');
+const fileInput = document.getElementById('fileInput');
+const postBtn = document.getElementById('postBtn');
+const uploadProgress = document.getElementById('uploadProgress');
+const uploadFill = document.getElementById('uploadFill');
+const spinnerSmall = document.getElementById('spinnerSmall');
+const toastEl = document.getElementById('toast');
+const loaderBottom = document.getElementById('loaderBottom');
 
-  </div><script type="module">
-  // Firebase setup
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
-  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-storage.js";
+let lastVisible = null;      // cursor for infinite scroll
+let loadingOlder = false;    // prevent double-load
+let realtimeUnsub = null;    // hold realtime unsubscribe
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDcO-wf5h960vscEyMlz_QQaXSRP0CzzLk",
-    authDomain: "anonymous-e06c8.firebaseapp.com",
-    projectId: "anonymous-e06c8",
-    storageBucket: "anonymous-e06c8.firebasestorage.app",
-    messagingSenderId: "309422384352",
-    appId: "1:309422384352:web:ea17f8a5edc42e03bf9c85",
-    measurementId: "G-0BCHGR1Q07"
-  };
+const PAGE_SIZE = 24;        // number of posts per page/load
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const storage = getStorage(app);
+/* ---------- small helpers ---------- */
+function showToast(msg, ms=1800){
+  toastEl.textContent = msg; toastEl.classList.add('show');
+  setTimeout(()=>toastEl.classList.remove('show'), ms);
+}
+function safeText(s){ return String(s || '').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-  const postsRef = collection(db, "posts");
+/* ---------- Render helpers ---------- */
+function makePostNode(doc){
+  const data = doc;
+  const art = document.createElement('article');
+  art.className = 'item floating';
+  // random spans for "newspaper" variety
+  if(Math.random() < 0.06) art.classList.add('span2row');
+  if(Math.random() < 0.05) art.classList.add('span2col');
 
-  // Post anonymously
-  async function postAnonymous() {
-    const text = document.getElementById("textInput").value.trim();
-    const file = document.getElementById("imageInput").files[0];
+  if(data.image){
+    const img = document.createElement('img'); img.src = data.image; img.alt = safeText(data.text || ''); art.appendChild(img);
+  }
+  const wrap = document.createElement('div'); wrap.className = 'text';
+  const h = document.createElement('div'); h.className='headline'; h.innerText = data.text ? (data.text.length>140?data.text.slice(0,138)+'…':data.text) : '';
+  const b = document.createElement('div'); b.className='body'; b.innerText = data.text || '';
+  wrap.appendChild(h); wrap.appendChild(b);
+  art.appendChild(wrap);
+  // floating amplitude
+  const amp = (1 + Math.min(6, (data.text||'').length/40)).toFixed(2);
+  art.style.setProperty('--tx-start', `-${amp}px`); art.style.setProperty('--tx-end', `${amp}px`);
+  art.style.animationDuration = (6 + Math.random()*6) + 's'; art.style.animationDelay = (-Math.random()*6)+'s';
+  return art;
+}
 
-    let imageUrl = null;
-    if (file) {
-      const storageRef = ref(storage, "images/" + Date.now() + file.name);
-      await uploadBytes(storageRef, file);
-      imageUrl = await getDownloadURL(storageRef);
+/* ---------- Realtime: newest posts (page-limited) ---------- */
+function startRealtime(){
+  // unsubscribe if exists
+  if(realtimeUnsub) realtimeUnsub();
+  // query newest PAGE_SIZE
+  const q = query(collection(db,'posts'), orderBy('time','desc'), limit(PAGE_SIZE));
+  realtimeUnsub = onSnapshot(q, snap => {
+    const docs = [];
+    snap.forEach(d => docs.push({ id: d.id, ...d.data() }));
+    // render newest first (we'll show newest at top-left like paper) -> we'll clear and re-render
+    feedEl.innerHTML = '';
+    docs.forEach(d => {
+      const node = makePostNode(d);
+      feedEl.appendChild(node);
+    });
+    // set lastVisible for older fetches (snapshot docs are in order desc)
+    lastVisible = snap.docs[snap.docs.length - 1] || null;
+  }, err => {
+    console.warn('realtime error', err); showToast('Realtime feed error');
+  });
+}
+
+/* ---------- Load older posts (infinite scroll) ---------- */
+async function loadOlder(){
+  if(loadingOlder) return;
+  loadingOlder = true;
+  loaderBottom.style.display = 'block';
+  try{
+    if(!lastVisible){
+      // no cursor yet: get first page (desc)
+      const snap = await getDocs(query(collection(db,'posts'), orderBy('time','desc'), limit(PAGE_SIZE)));
+      const docs = snap.docs.map(d=>({id:d.id,...d.data()}));
+      // append after current content
+      docs.forEach(d => feedEl.appendChild(makePostNode(d)));
+      lastVisible = snap.docs[snap.docs.length -1] || null;
+    } else {
+      // startAfter the cursor (pagination)
+      const q = query(collection(db,'posts'), orderBy('time','desc'), startAfter(lastVisible), limit(PAGE_SIZE));
+      const snap = await getDocs(q);
+      const docs = snap.docs.map(d=>({id:d.id,...d.data()}));
+      docs.forEach(d => feedEl.appendChild(makePostNode(d)));
+      lastVisible = snap.docs[snap.docs.length -1] || lastVisible;
+      if(snap.empty) { showToast('No more posts'); }
+    }
+  }catch(e){ console.warn('older load failed', e); showToast('Load failed'); }
+  loaderBottom.style.display = 'none'; loadingOlder = false;
+}
+
+/* ---------- Post flow: image upload, create doc ---------- */
+async function createPost(){
+  if(!postText.value.trim() && !fileInput.files.length){ showToast('Write text or choose an image'); return; }
+  // rate limit: 20s per device
+  const last = Number(localStorage.getItem('anon_last_post')||0);
+  if(Date.now() - last < 20_000){ showToast('Wait a moment before posting'); return; }
+
+  postBtn.disabled = true; spinnerSmall.style.display = 'block';
+
+  let imageUrl = null;
+  try{
+    if(fileInput.files.length){
+      const file = fileInput.files[0];
+      if(file.size > 6*1024*1024){ showToast('Image too large (6MB max)'); throw new Error('Image too large'); }
+      const path = `images/${Date.now()}_${Math.random().toString(36).slice(2)}.${(file.name.split('.').pop()||'jpg').slice(0,6)}`;
+      const storageRef = ref(storage, path);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadProgress.style.display = 'block';
+      await new Promise((resolve, reject) => {
+        uploadTask.on('state_changed', snapshot => {
+          const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+          uploadFill.style.width = pct + '%';
+        }, err => { reject(err); }, async () => {
+          imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          uploadProgress.style.display = 'none'; uploadFill.style.width = '0%';
+          resolve();
+        });
+      });
     }
 
-    await addDoc(postsRef, {
-      text: text,
-      image: imageUrl,
-      time: serverTimestamp(),
+    // create post doc
+    await addDoc(collection(db,'posts'), {
+      text: postText.value || '',
+      image: imageUrl || null,
+      time: new Date()   // serverTimestamp() is ok but for simplicity used client time - change if you want serverTimestamp
     });
 
-    document.getElementById("textInput").value = "";
-    document.getElementById("imageInput").value = "";
-
-    refreshPosts();
+    localStorage.setItem('anon_last_post', Date.now());
+    postText.value = ''; fileInput.value = '';
+    showToast('Posted');
+    // After posting, realtime listener will add it automatically
+  }catch(err){
+    console.error(err); showToast('Post failed');
+  } finally {
+    spinnerSmall.style.display = 'none'; postBtn.disabled = false;
   }
+}
 
-  // Load posts
-  async function refreshPosts() {
-    const container = document.getElementById("postsContainer");
-    container.innerHTML = "";
+/* ---------- UI wiring ---------- */
+document.getElementById('postBtn').addEventListener('click', createPost);
+document.getElementById('refreshBtn').addEventListener('click', startRealtime);
+document.getElementById('shuffleBtn').addEventListener('click', ()=>{
+  // small shuffle: change some random spans and reflow
+  document.querySelectorAll('.item').forEach(el=>{ el.classList.toggle('span2col', Math.random()<0.06); el.classList.toggle('span2row', Math.random()<0.04); });
+  showToast('Layout shuffled');
+});
+document.getElementById('themeBtn').addEventListener('click', ()=>{
+  document.body.classList.toggle('light');
+  showToast(document.body.classList.contains('light') ? 'Light theme' : 'Dark theme');
+});
 
-    const data = await getDocs(postsRef);
-    data.forEach((doc) => {
-      const p = doc.data();
+/* ---------- infinite scroll handler ---------- */
+let scroller = null;
+function onScroll(){
+  const nearBottom = (window.innerHeight + window.scrollY) >= (document.body.offsetHeight - 300);
+  if(nearBottom && !loadingOlder) loadOlder();
+}
+window.addEventListener('scroll', onScroll);
 
-      const div = document.createElement("div");
-      div.className = "post";
+/* ---------- start realtime and initial older load ---------- */
+startRealtime();
+loadOlder();
 
-      div.innerHTML = `<p>${p.text || ""}</p>`;
+/* ---------- keyboard shortcut: ctrl+enter to post ---------- */
+postText.addEventListener('keydown', (e) => { if(e.key === 'Enter' && (e.ctrlKey||e.metaKey)){ createPost(); } });
 
-      if (p.image) {
-        div.innerHTML += `<img src="${p.image}" />`;
-      }
-
-      container.prepend(div);
-    });
-  }
-
-  // World Mood randomizer
-  function shuffleMood() {
-    const mood = Math.floor(Math.random() * 100);
-    document.getElementById("moodFill").style.width = mood + "%";
-  }
-
-  // Theme toggle
-  function toggleTheme() {
-    document.body.classList.toggle("light");
-  }
-
-  refreshPosts();
-</script></body>
+</script>
+</body>
 </html>
