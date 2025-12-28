@@ -1,366 +1,61 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Richsea Wallet — Secure & Private Crypto Wallet</title>
-  <meta name="description" content="Richsea Wallet — secure non-custodial crypto wallet with built-in swap, convert-dust, staking, node options and privacy controls.">
-  <style>
-    :root{
-      --bg:#061226;
-      --card:#0c1730;
-      --muted:#a9c0e6;
-      --accent-1:#2a6df6;
-      --accent-2:#3aa0ff;
-      --glass: rgba(255,255,255,0.03);
-      --radius:18px;
-      --maxwidth:1100px;
-      --text:#e9f2ff;
-    }
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0;
-      font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      background: linear-gradient(180deg,var(--bg) 0%, #041225 100%);
-      color:var(--text);
-      -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      line-height:1.5;
-    }
-
-    a{color:inherit;text-decoration:none}
-
-    .container{max-width:var(--maxwidth);margin:0 auto;padding:40px 24px}
-    header.site-header{padding:28px 0;display:flex;align-items:center;justify-content:space-between;gap:16px}
-    .logo{
-      display:flex;align-items:center;gap:12px;
-    }
-    .logo .mark{
-      width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));
-      display:flex;align-items:center;justify-content:center;font-weight:700;color:white;font-size:20px;
-      box-shadow:0 6px 18px rgba(41,101,255,0.18);
-    }
-    nav{display:flex;gap:18px;align-items:center}
-    nav a{color:var(--muted);font-weight:600;padding:8px 12px;border-radius:10px}
-    nav a:hover{background:rgba(255,255,255,0.02);color:var(--text)}
-
-    /* Hero */
-    .hero{
-      display:grid;grid-template-columns:1fr 420px;gap:32px;align-items:center;padding:48px 0;
-    }
-    .hero .eyebrow{color:var(--muted);font-weight:700}
-    .hero h1{margin:12px 0 12px;font-size:36px;line-height:1.04}
-    .hero p.lead{color:var(--muted);max-width:62ch;font-size:16px;margin-bottom:22px}
-    .cta-row{display:flex;gap:12px;align-items:center}
-    .btn{
-      display:inline-flex;align-items:center;gap:10px;padding:12px 18px;border-radius:999px;font-weight:700;border:0;
-      cursor:pointer;background:linear-gradient(90deg,var(--accent-1),var(--accent-2));color:#fff;box-shadow:0 8px 30px rgba(38,112,255,0.18)
-    }
-    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text)}
-    .download-badges{display:flex;gap:10px;flex-direction:column}
-    .badge{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,0.03);font-weight:700;color:var(--text)}
-    .phone-mock{width:100%;max-width:340px;height:640px;border-radius:26px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.02), 0 18px 40px rgba(3,19,54,0.6);position:relative;overflow:hidden}
-
-    /* Features grid */
-    .section{padding:56px 0;border-top:1px solid rgba(255,255,255,0.02)}
-    .features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
-    .card{background:var(--card);padding:18px;border-radius:16px;border:1px solid rgba(255,255,255,0.02)}
-    .feat-title{font-weight:800;margin-bottom:6px}
-    .feat-desc{color:var(--muted);font-size:14px}
-
-    /* Full-width feature list */
-    .feature-list{display:grid;gap:14px}
-    .feature-list .row{display:flex;gap:12px;align-items:flex-start}
-    .icon-dot{min-width:48px;height:48px;border-radius:10px;background:linear-gradient(180deg,var(--accent-1),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:800;color:white}
-
-    /* About / Privacy */
-    .about p,.privacy p{color:var(--muted);max-width:78ch}
-    .privacy pre{white-space:pre-wrap;color:var(--muted);line-height:1.6}
-
-    /* Footer */
-    footer{padding:36px 0;color:var(--muted)}
-    .footer-grid{display:flex;justify-content:space-between;gap:20px;align-items:center}
-    .socials{display:flex;gap:12px}
-
-    /* Responsive */
-    @media (max-width:1000px){
-      .hero{grid-template-columns:1fr; padding-bottom:30px}
-      .features-grid{grid-template-columns:1fr}
-      .download-badges{flex-direction:row}
-      .phone-mock{max-width:360px;height:540px;margin:0 auto}
-      .footer-grid{flex-direction:column;align-items:flex-start}
-    }
-    @media (max-width:520px){
-      .container{padding:28px 18px}
-      header.site-header{flex-direction:column;align-items:flex-start;gap:14px}
-      .hero h1{font-size:28px}
-      .badge{font-size:14px;padding:9px 10px}
-    }
-
-    /* Smooth scroll */
-    html{scroll-behavior:smooth}
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Homes - Home</title>
+<link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="container">
-    <header class="site-header">
-      <div class="logo">
-        <div class="mark">R</div>
-        <div>
-          <div style="font-weight:800">Richsea</div>
-          <div style="color:var(--muted);font-size:13px;margin-top:2px">Secure • Private • Easy</div>
-        </div>
-      </div>
 
-      <nav aria-label="Main navigation">
-        <a href="#features">Features</a>
-        <a href="#about">About</a>
-        <a href="#privacy">Privacy</a>
-        <a href="#download" class="btn ghost" style="padding:8px 12px">Download</a>
-      </nav>
-    </header>
+<!-- Header -->
+<header>
+  <div class="logo">Smart Homes</div>
+  <button id="signupBtn" class="plus-btn">+</button>
+</header>
 
-    <!-- HERO -->
-    <section class="hero">
-      <div>
-        <div class="eyebrow">Non-custodial • Multi-chain • Privacy-first</div>
-        <h1>Richsea Wallet — Secure crypto that stays yours</h1>
-        <p class="lead">Manage multiple assets, swap tokens, convert small balances, stake for yield and control privacy — all inside a fast, secure and easy-to-use wallet built for beginners and power users alike.</p>
+<!-- Search Bar -->
+<div class="search-container">
+  <input type="text" id="searchInput" placeholder="Search whatever you want">
+  <button id="categoryBtn" class="category-btn">Category</button>
+  <button id="microphoneBtn" class="microphone-btn">🎤</button>
+  <button id="sendBtn" class="send-btn">➡️</button>
+</div>
 
-        <div class="cta-row" style="margin-top:8px;">
-          <a class="btn" href="#download" aria-label="Download Richsea Wallet">
-            <!-- Download icon SVG -->
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M12 3v12" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M7 10l5 5 5-5" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-              <rect x="3" y="18" width="18" height="3" rx="1.5" fill="rgba(255,255,255,0.06)"/>
-            </svg>
-            Download App
-          </a>
+<!-- Service Grid -->
+<div class="grid-container" id="serviceGrid">
+  <div class="grid-box">Plumbing</div>
+  <div class="grid-box">Electrician</div>
+  <div class="grid-box">Catering</div>
+  <div class="grid-box">Boutique</div>
+  <div class="grid-box">Carpentry</div>
+  <div class="grid-box">Cleaning</div>
+  <div class="grid-box">Painting</div>
+  <div class="grid-box">Mechanic</div>
+  <div class="grid-box">Delivery</div>
+  <div class="grid-box">Laundry</div>
+  <div class="grid-box">Gardening</div>
+  <div class="grid-box">Fitness</div>
+  <div class="grid-box">Tutoring</div>
+  <div class="grid-box">Photography</div>
+  <div class="grid-box">Salon</div>
+  <div class="grid-box">Bakery</div>
+  <div class="grid-box">IT Services</div>
+  <div class="grid-box">Home Decor</div>
+  <div class="grid-box">Security</div>
+  <div class="grid-box">Transport</div>
+</div>
 
-          <a class="btn ghost" href="#features">Explore features</a>
-        </div>
-
-        <div style="margin-top:22px" class="download-badges" id="download">
-          <a class="badge" href="#" title="Get on Google Play (placeholder)">
-            <!-- Google Play bar -->
-            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden><path d="M2 2l20 10-20 10z" fill="white" opacity="0.06"/></svg>
-            Get it on Google Play
-          </a>
-          <a class="badge" href="#" title="Get on App Store (placeholder)">
-            <!-- App store -->
-            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden><circle cx="12" cy="12" r="8" fill="white" opacity="0.06"/></svg>
-            Download on the App Store
-          </a>
-        </div>
-      </div>
-
-      <!-- Right phone mock / illustration -->
-      <div style="display:flex;justify-content:center;align-items:center;">
-        <div class="phone-mock" role="img" aria-label="App preview placeholder">
-          <!-- Simple illustration of swap card -->
-          <div style="position:absolute;left:18px;right:18px;top:24px">
-            <div style="background:linear-gradient(90deg,#081a35, #0b2a57);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.02)">
-              <div style="display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-weight:700">Swap <span style="font-size:12px;color:var(--muted)">Max</span></div>
-              <div style="margin-top:10px;background:rgba(255,255,255,0.02);padding:10px;border-radius:10px">
-                <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800">BNB</div><div style="color:var(--muted)">0</div></div>
-              </div>
-              <div style="margin-top:10px;background:rgba(255,255,255,0.02);padding:10px;border-radius:10px">
-                <div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800">USDC</div><div style="color:var(--muted)">0</div></div>
-              </div>
-              <div style="margin-top:14px;display:flex;justify-content:center">
-                <div class="btn" style="padding:10px 18px;border-radius:999px">Swap</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- bottom nav -->
-          <div style="position:absolute;left:0;right:0;bottom:18px;padding:10px 18px;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-weight:700">
-            <div style="display:flex;gap:12px;align-items:center">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 12h18" stroke="rgba(255,255,255,0.3)" stroke-width="1.5" stroke-linecap="round"/></svg>
-              Wallet
-            </div>
-            <div style="color:var(--accent-2)">Swap</div>
-            <div>Earn</div>
-            <div>Settings</div>
-          </div>
-
-        </div>
-      </div>
-    </section>
-
-    <!-- FEATURES -->
-    <section id="features" class="section">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:20px">
-        <div>
-          <h2 style="margin:0 0 8px">Features</h2>
-          <div style="color:var(--muted);font-weight:600">Everything your users need to manage crypto with confidence</div>
-        </div>
-      </div>
-
-      <div style="margin-top:20px" class="features-grid">
-        <!-- Left column: feature cards -->
-        <div style="display:flex;flex-direction:column;gap:16px">
-          <div class="card">
-            <div class="feat-title">1. Multi-Asset Crypto Wallet</div>
-            <div class="feat-desc">
-              Store, send and receive many cryptocurrencies like BNB, BUSD, USDT, USDC and tokenized NGN. Real-time balances and USD values.
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="feat-title">2. Built-in Swap</div>
-            <div class="feat-desc">
-              Seamless in-app swapping (e.g. BNB ↔ USDC/BUSD/USDT) with provider information, slippage, and rate estimates shown.
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="feat-title">3. Convert Small Balances</div>
-            <div class="feat-desc">
-              Convert dust/small balances into a main token in one tap. Select multiple coins and see max-transferable amounts before converting.
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="feat-title">4. Earn (Staking & Yield)</div>
-            <div class="feat-desc">
-              Stake tokens or participate in yield programs to earn passive income directly from the app.
-            </div>
-          </div>
-        </div>
-
-        <!-- Right column: feature list -->
-        <div class="card" style="padding:22px">
-          <div style="font-weight:800;font-size:18px;margin-bottom:12px">More Powerful Tools</div>
-          <div class="feature-list">
-            <div class="row"><div class="icon-dot">5</div><div><div style="font-weight:700">5. Security Center</div><div class="feat-desc">Advanced protections including PIN, biometric and secure recovery flows.</div></div></div>
-
-            <div class="row"><div class="icon-dot">6</div><div><div style="font-weight:700">6. Privacy Controls</div><div class="feat-desc">Manage what data the app collects and maintain transparency over your data.</div></div></div>
-
-            <div class="row"><div class="icon-dot">7</div><div><div style="font-weight:700">7. Node Settings</div><div class="feat-desc">Switch nodes or networks for advanced users and developers.</div></div></div>
-
-            <div class="row"><div class="icon-dot">8</div><div><div style="font-weight:700">8. Customer Support</div><div class="feat-desc">Fast in-app support channels to reach the Richsea team.</div></div></div>
-
-            <div class="row"><div class="icon-dot">9</div><div><div style="font-weight:700">9. Community</div><div class="feat-desc">Links to social channels like Telegram and X to keep users updated.</div></div></div>
-
-            <div class="row"><div class="icon-dot">10</div><div><div style="font-weight:700">10. About & Company Info</div><div class="feat-desc">Mission, vision and company details are available in-app and on the website.</div></div></div>
-
-            <div class="row"><div class="icon-dot">11</div><div><div style="font-weight:700">11. Simple Navigation</div><div class="feat-desc">A clear bottom navigation: Wallet • Swap • Earn • Settings for fast access.</div></div></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ABOUT -->
-    <section id="about" class="section about">
-      <div style="display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap">
-        <div style="flex:1;min-width:300px">
-          <h2 style="margin-top:0">About Richsea Wallet</h2>
-          <p>Richsea Wallet was built to give everyone — from beginners to power users — a secure, private and easy-to-use way to manage crypto assets. We are committed to financial freedom, strong security practices, and returning control to users by building a non-custodial wallet that’s both powerful and approachable.</p>
-          <p>Our core values: Security, Privacy, Simplicity — built on transparent policies and continuous improvement. Richsea supports multi-chain access, swaps, conversions and earning opportunities so your crypto works for you.</p>
-        </div>
-
-        <div style="width:320px;min-width:240px">
-          <div class="card" style="padding:18px">
-            <div style="font-weight:800;margin-bottom:8px">Quick Facts</div>
-            <div class="feat-desc"><strong>Non-custodial:</strong> You control private keys & funds.</div>
-            <div class="feat-desc" style="margin-top:8px"><strong>Multi-chain:</strong> Support for popular networks and tokens.</div>
-            <div class="feat-desc" style="margin-top:8px"><strong>Privacy-first:</strong> Manage data and app permissions.</div>
-            <div style="margin-top:12px"><a href="#download" class="btn">Get the App</a></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- PRIVACY -->
-    <section id="privacy" class="section privacy">
-      <h2>Privacy Policy</h2>
-      <p style="margin-top:6px;color:var(--muted)">Last updated: <strong>2025-12-02</strong></p>
-
-      <div style="margin-top:18px" class="card" aria-live="polite">
-        <div class="privacy" style="padding:12px">
-<pre>
-Privacy Policy for Richsea Wallet
-
-1. Introduction
-Richsea Wallet (“we”, “us”, “our”) values your privacy. This Privacy Policy describes how we collect, use, store, and protect your personal information when you use our website and mobile application (“App” / “Service”).
-
-2. Information We Collect
-- Personal information you provide: e.g. email address, name (only if voluntarily submitted), and contact information for support.
-- Device and usage data: IP address, device type, OS, unique identifiers, and anonymous analytics (if enabled).
-- Transaction data: blockchain addresses and transaction details necessary to perform wallet functions. We do not collect private keys.
-
-3. How We Use Your Information
-- To provide and maintain the Service (wallet operations, account management and support).
-- To improve app performance, features and user experience.
-- To send important updates and notifications (only if you opt-in).
-- To maintain security and prevent fraud (e.g., logs used for troubleshooting and protection).
-
-4. Data Sharing and Disclosure
-We do NOT sell personal information. We may disclose information if required by law or to comply with legal processes. Third-party service providers (e.g., analytics or hosting) that help operate the Service may process limited data on our behalf under contractual protections.
-
-5. Data Security
-We use industry-standard security measures—such as encryption and access controls—to protect your data. Richsea Wallet never transmits or stores your private keys on our servers. Always keep your recovery phrase and private keys secure.
-
-6. Your Rights
-You may request access to, correction of, or deletion of your personal data. You can opt out of non-essential data collection and communications at any time by contacting us.
-
-7. Changes to This Privacy Policy
-We may update this Privacy Policy as our Service evolves. We will post the revised policy on this page with a new “Last updated” date.
-
-8. Contact Us
-If you have questions or concerns about privacy, contact: www.richeasea.com
-</pre>
-        </div>
-      </div>
-    </section>
-
-    <!-- FOOTER -->
-    <footer class="section" role="contentinfo">
-      <div class="footer-grid">
-        <div>
-          <div style="display:flex;align-items:center;gap:12px">
-            <div class="mark" style="width:44px;height:44px;border-radius:10px;font-weight:800">R</div>
-            <div>
-              <div style="font-weight:800">Richsea Wallet</div>
-              <div style="color:var(--muted);font-size:13px">Secure • Private • Easy</div>
-            </div>
-          </div>
-
-          <div style="margin-top:14px;color:var(--muted)">© <span id="year"></span> Richsea Wallet. All rights reserved.</div>
-        </div>
-
-        <div style="display:flex;gap:18px;align-items:center">
-          <div style="text-align:right">
-            <div style="font-weight:700">Contact</div>
-            <div style="color:var(--muted)"><a href="mailto:youremail@example.com">www.richsea.com</a></div>
-          </div>
-
-          <div style="text-align:right">
-            <div style="font-weight:700">Follow</div>
-            <div class="socials">
-              <a aria-label="Telegram" href="#" title="Telegram">Telegram</a>
-              <a aria-label="X" href="#" title="X">X</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    </footer>
-
+<!-- Sign Up / Login Modal -->
+<div id="signupModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <h2>Sign Up / Login</h2>
+    <button>Sign Up</button>
+    <button>Login</button>
   </div>
+</div>
 
-  <script>
-    // Set year
-    document.getElementById('year').textContent = new Date().getFullYear();
-
-    // Simple accessibility: keyboard focus for buttons
-    Array.from(document.querySelectorAll('.btn')).forEach(b=>{
-      b.addEventListener('keydown', (e)=>{
-        if(e.key === 'Enter' || e.key === ' ') b.click();
-      });
-    });
-  </script>
+<script src="js/script.js"></script>
 </body>
-        </html>
+  </html>
