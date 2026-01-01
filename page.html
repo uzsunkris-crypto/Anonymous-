@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anonymous Wall</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="paper-header">
+  <h1 id="pageTitle"></h1>
+  <p class="tagline">An anonymous public wall</p>
+</header>
+
+<section id="messages" class="news-wall"></section>
+
+<section class="submit-section">
+  <textarea id="messageInput" placeholder="Write anonymously..."></textarea>
+  <button onclick="sendMessage()">Publish</button>
+</section>
+
+<script src="firebase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
